@@ -1,0 +1,90 @@
+{
+  "name": "Request for Vulnerability Scan v1",
+  "description": "Identifies the vulnerabilities on the servers",
+  "scheduleRule": "immediate",
+  "exceptionRules": [],
+  "target": {
+    "executionType": "parallel",
+    "groups": [
+      {
+        "timeoutSeconds": 600,
+        "batchSize": {
+          "type": "number",
+          "value": 5
+        },
+        "distributionMethod": "batching",
+        "successCriteria": [
+          {
+            "numRuns": { "type": "percent", "value": 100 },
+            "status": "success"
+          }
+        ],
+        "nodeListType": "nodes",
+        "nodeIdentifiers": [
+          "5781c2c8-78a8-48ba-bac2-58b442d86317"
+        ]
+      }
+    ]
+  },
+  "actions": {
+    "accessMode": "agent",
+    "steps": [
+      {
+        "name": "Anayze Request requirements and resolve NodeID",
+        "interpreter": {
+          "skill": {
+            "minVersion": "1.0.0"
+          },
+          "name": "chef-platform/shell-interpreter"
+        },
+        "command": {
+          "linux": [
+            "sudo bash -c 'mkdir -p /home/ubuntu/reports; sudo inspec exec https://github.com/AkashKhurana3092/ubuntu_compliance --reporter json > /home/ubuntu/reports/log.json'"
+          ]
+        },
+        "inputs": {},
+        "expectedInputs": {},
+        "outputFieldRules": {},
+        "retryCount": 1,
+        "failureBehavior": {
+          "action": "retryThenIgnore",
+          "retryBackoffStrategy": {
+            "type": "linear",
+            "delaySeconds": 1,
+            "arguments": [1, 3, 5]
+          }
+        },
+        "limits": {},
+        "conditions": []
+      },
+      {
+        "name": "Execution of Request",
+        "interpreter": {
+          "skill": {
+            "minVersion": "1.0.0"
+          },
+          "name": "chef-platform/shell-interpreter"
+        },
+        "command": {
+          "linux": [
+            "sudo wget -P /home/ubuntu/ https://raw.githubusercontent.com/ankit100ni/auto_heal/refs/heads/main/job_scripts/incident_creation.sh; sudo chmod +x /home/ubuntu/incident_creation.sh; sudo /home/ubuntu/incident_creation.sh"
+          ]
+        },
+        "inputs": {},
+        "expectedInputs": {},
+        "outputFieldRules": {},
+        "retryCount": 2,
+        "failureBehavior": {
+          "action": "retryThenFail",
+          "retryBackoffStrategy": {
+            "type": "linear",
+            "delaySeconds": 1,
+            "arguments": [1, 3, 5]
+          }
+        },
+        "limits": {},
+        "conditions": []
+      }
+    ]
+  }
+}
