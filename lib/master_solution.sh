@@ -110,7 +110,8 @@ if [[ "$catalogName" == "S3 Bucket Mapping in Windows Machine" ]]; then
   SCHEDULER_URL="http://ankchef360.success.chef.co:31000/courier/scheduler-api/v1/jobs"
   log "Scheduler URL: $SCHEDULER_URL"
 
-  SCHEDULER_TEMPLATE="/Users/anksoni/Documents/Repositories/req_mgmt/courier_jobs/scheduler_payload_template.json"
+  SCHEDULER_TEMPLATE="/tmp/scheduler_payload_template.json"
+  wget -q -O "$SCHEDULER_TEMPLATE" "https://raw.githubusercontent.com/prohealops/req_mgmt/refs/heads/main/courier_jobs/scheduler_payload_template.json"
   if [[ ! -f "$SCHEDULER_TEMPLATE" ]]; then
     echo "Error: Scheduler payload template not found at $SCHEDULER_TEMPLATE."
     exit 1
