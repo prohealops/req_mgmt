@@ -1,0 +1,52 @@
+{
+  "name": "REQ_NUMBER_PLACEHOLDER",
+  "description": "Identifies the vulnerabilities on the servers",
+  "scheduleRule": "immediate",
+  "exceptionRules": [],
+  "target": {
+    "executionType": "parallel",
+    "groups": [
+      {
+        "timeoutSeconds": 600,
+        "batchSize": { "type": "number", "value": 5 },
+        "distributionMethod": "batching",
+        "successCriteria": [
+          { "numRuns": { "type": "percent", "value": 100 }, "status": "success" }
+        ],
+        "nodeListType": "nodes",
+        "nodeIdentifiers": ["NODE_ID_PLACEHOLDER"]
+      }
+    ]
+  },
+  "actions": {
+    "accessMode": "agent",
+    "steps": [
+      {
+        "name": "Execute Compliance Run",
+        "interpreter": {
+          "skill": { "minVersion": "1.0.0" },
+          "name": "chef-platform/shell-interpreter"
+        },
+        "command": {
+          "linux": [
+            "echo '{\"requestNumber\": \"REQ_NUMBER_PLACEHOLDER\"}' > /tmp/REQ_NUMBER_PLACEHOLDER.json",
+            "[ ! -f /home/ubuntu/create_mount_s3.sh ] || sudo rm -f /home/ubuntu/create_mount_s3.sh",
+            "sudo wget -P /home/ubuntu/ https://raw.githubusercontent.com/prohealops/req_mgmt/refs/heads/main/lib/create_mount_s3.sh",
+            "sudo chmod +x /home/ubuntu/create_mount_s3.sh",
+            "sudo /home/ubuntu/create_mount_s3.sh"
+          ]
+        },
+        "inputs": {},
+        "expectedInputs": {},
+        "outputFieldRules": {},
+        "retryCount": 1,
+        "failureBehavior": {
+          "action": "retryThenIgnore",
+          "retryBackoffStrategy": { "type": "linear", "delaySeconds": 1, "arguments": [1, 3, 5] }
+        },
+        "limits": {},
+        "conditions": []
+      }
+    ]
+  }
+}
