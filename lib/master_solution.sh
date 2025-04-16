@@ -121,7 +121,7 @@ if [[ "$catalogName" == "S3 Bucket Mapping in Windows Machine" ]]; then
   SCHEDULER_PAYLOAD=$(jq \
     --arg reqNumber "$REQ_NUMBER" \
     --arg nodeID "$NODE_ID" \
-    --arg cmd "echo '{\"requestNumber\": \"$REQ_NUMBER\"}' > /tmp/$REQ_NUMBER.json" \
+    --arg cmd "echo '{\\\"requestNumber\\\": \\\"$REQ_NUMBER\\\"}' > /tmp/$REQ_NUMBER.json" \
     '.name = $reqNumber |
      .target.groups[0].nodeIdentifiers[0] = $nodeID |
      .actions.steps[0].command.linux[0] = $cmd' \

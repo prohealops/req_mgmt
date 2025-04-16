@@ -5,7 +5,6 @@
 # ----------------------------
 BUCKET_NAME="ank-courier-healops"
 MOUNT_POINT="/home/ubuntu/s3bucket1"
-PASSWD_FILE="/root/.passwd-s3fs"
 S3_URL="https://s3.amazonaws.com"
 LOG_FILE="/var/log/s3_mount.log"
 # ----------------------------
@@ -34,8 +33,7 @@ if mount | grep "on $MOUNT_POINT type fuse.s3fs" > /dev/null; then
     log "Bucket already mounted on $MOUNT_POINT"
 else
     log "Mounting bucket $BUCKET_NAME to $MOUNT_POINT"
-    s3fs "$BUCKET_NAME" "$MOUNT_POINT" \
-        -o passwd_file="$PASSWD_FILE" 
+    s3fs "$BUCKET_NAME" "$MOUNT_POINT" 
 
     if [ $? -eq 0 ]; then
         log "Successfully mounted $BUCKET_NAME"
