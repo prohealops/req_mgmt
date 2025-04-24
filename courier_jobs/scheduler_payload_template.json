@@ -1,6 +1,6 @@
 {
   "name": "REQ_NUMBER_PLACEHOLDER",
-  "description": "Identifies the vulnerabilities on the servers",
+  "description": "Generic job template for S3 bucket operations",
   "scheduleRule": "immediate",
   "exceptionRules": [],
   "target": {
@@ -22,18 +22,14 @@
     "accessMode": "agent",
     "steps": [
       {
-        "name": "Execute Compliance Run",
+        "name": "Execute Command",
         "interpreter": {
           "skill": { "minVersion": "1.0.0" },
           "name": "chef-platform/shell-interpreter"
         },
         "command": {
           "linux": [
-            "echo '{\"requestNumber\": \"REQ_NUMBER_PLACEHOLDER\"}' > /tmp/REQ_NUMBER_PLACEHOLDER.json",
-            "[ ! -f /home/ubuntu/create_mount_s3.sh ] || sudo rm -f /home/ubuntu/create_mount_s3.sh",
-            "sudo wget -P /home/ubuntu/ https://raw.githubusercontent.com/prohealops/req_mgmt/refs/heads/main/lib/create_mount_s3.sh",
-            "sudo chmod +x /home/ubuntu/create_mount_s3.sh",
-            "sudo /home/ubuntu/create_mount_s3.sh"
+            "COMMAND_PLACEHOLDER"
           ]
         },
         "inputs": {},

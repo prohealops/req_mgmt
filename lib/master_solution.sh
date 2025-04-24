@@ -13,9 +13,63 @@ log() {
   fi
 }
 
-# Check if the ServerNow request number is passed as an argument
+# Function to get access token
+get_access_token() {
+  local ACCESS_KEY="YTZIPMUCE0HGVLQD1KWS"
+  local SECRET_KEY="nnvOrq9Rg91TTpsztcYmcCX9CYTlZDxDLa5tIkQY"
+  local STATE="random-string"
+
+  local LOGIN_URL="http://ankchef360.success.chef.co:31000/platform/user-accounts/v1/user/api-token/login"
+  log "Login URL: $LOGIN_URL"
+
+  local LOGIN_PAYLOAD=$(jq -n \
+    --arg accessKey "$ACCESS_KEY" \
+    --arg secretKey "$SECRET_KEY" \
+    --arg state "$STATE" \
+    '{accessKey: $accessKey, secretKey: $secretKey, state: $state}')
+  log "Login payload: $LOGIN_PAYLOAD"
+
+  local LOGIN_RESPONSE=$(curl -s -X POST "$LOGIN_URL" \
+    -H "Content-Type: application/json" \
+    -d "$LOGIN_PAYLOAD")
+  log "Login response: $LOGIN_RESPONSE"
+
+  local OAUTH_CODE=$(echo "$LOGIN_RESPONSE" | jq -r '.item.oauthCode')
+  log "OAuth code: $OAUTH_CODE"
+
+  if [[ -z "$OAUTH_CODE" || "$OAUTH_CODE" == "null" ]]; then
+    echo "Error: Failed to fetch oauthCode."
+    return 1
+  fi
+
+  local JWT_URL="http://ankchef360.success.chef.co:31000/platform/user-accounts/v1/user/api-token/jwt"
+  log "JWT URL: $JWT_URL"
+
+  local JWT_PAYLOAD=$(jq -n \
+    --arg oauthCode "$OAUTH_CODE" \
+    --arg state "$STATE" \
+    '{oauthCode: $oauthCode, state: $state}')
+  log "JWT payload: $JWT_PAYLOAD"
+
+  local JWT_RESPONSE=$(curl -s -X POST "$JWT_URL" \
+    -H "Content-Type: application/json" \
+    -d "$JWT_PAYLOAD")
+  log "JWT response: $JWT_RESPONSE"
+
+  local ACCESS_TOKEN=$(echo "$JWT_RESPONSE" | jq -r '.item.accessToken')
+  log "Access token: $ACCESS_TOKEN"
+
+  if [[ -z "$ACCESS_TOKEN" || "$ACCESS_TOKEN" == "null" ]]; then
+    echo "Error: Failed to fetch accessToken."
+    return 1
+  fi
+  
+  echo "$ACCESS_TOKEN"
+}
+
+# Check if the ServiceNow request number is passed as an argument
 if [[ $# -ne 1 ]]; then
-  echo "Usage: $0 <ServerNow Request Number>"
+  echo "Usage: $0 <ServiceNow Request Number>"
   exit 1
 fi
 
@@ -37,52 +91,10 @@ log "Extracted catalogName: $catalogName"
 if [[ "$catalogName" == "S3 Bucket Mapping in Windows Machine" ]]; then
   log "Catalog name matches the required value."
 
-  ACCESS_KEY="YTZIPMUCE0HGVLQD1KWS"
-  SECRET_KEY="nnvOrq9Rg91TTpsztcYmcCX9CYTlZDxDLa5tIkQY"
-  STATE="random-string"
-
-  LOGIN_URL="http://ankchef360.success.chef.co:31000/platform/user-accounts/v1/user/api-token/login"
-  log "Login URL: $LOGIN_URL"
-
-  LOGIN_PAYLOAD=$(jq -n \
-    --arg accessKey "$ACCESS_KEY" \
-    --arg secretKey "$SECRET_KEY" \
-    --arg state "$STATE" \
-    '{accessKey: $accessKey, secretKey: $secretKey, state: $state}')
-  log "Login payload: $LOGIN_PAYLOAD"
-
-  LOGIN_RESPONSE=$(curl -s -X POST "$LOGIN_URL" \
-    -H "Content-Type: application/json" \
-    -d "$LOGIN_PAYLOAD")
-  log "Login response: $LOGIN_RESPONSE"
-
-  OAUTH_CODE=$(echo "$LOGIN_RESPONSE" | jq -r '.item.oauthCode')
-  log "OAuth code: $OAUTH_CODE"
-
-  if [[ -z "$OAUTH_CODE" || "$OAUTH_CODE" == "null" ]]; then
-    echo "Error: Failed to fetch oauthCode."
-    exit 1
-  fi
-
-  JWT_URL="http://ankchef360.success.chef.co:31000/platform/user-accounts/v1/user/api-token/jwt"
-  log "JWT URL: $JWT_URL"
-
-  JWT_PAYLOAD=$(jq -n \
-    --arg oauthCode "$OAUTH_CODE" \
-    --arg state "$STATE" \
-    '{oauthCode: $oauthCode, state: $state}')
-  log "JWT payload: $JWT_PAYLOAD"
-
-  JWT_RESPONSE=$(curl -s -X POST "$JWT_URL" \
-    -H "Content-Type: application/json" \
-    -d "$JWT_PAYLOAD")
-  log "JWT response: $JWT_RESPONSE"
-
-  ACCESS_TOKEN=$(echo "$JWT_RESPONSE" | jq -r '.item.accessToken')
-  log "Access token: $ACCESS_TOKEN"
-
-  if [[ -z "$ACCESS_TOKEN" || "$ACCESS_TOKEN" == "null" ]]; then
-    echo "Error: Failed to fetch accessToken."
+  # Get the access token using the function
+  ACCESS_TOKEN=$(get_access_token)
+  if [[ $? -ne 0 ]]; then
+    echo "Error: Failed to get access token."
     exit 1
   fi
 
@@ -117,14 +129,20 @@ if [[ "$catalogName" == "S3 Bucket Mapping in Windows Machine" ]]; then
     exit 1
   fi
 
-  # Replace placeholders in the JSON template
+  # Replace placeholders in the JSON template for the initial job
   SCHEDULER_PAYLOAD=$(jq \
-    --arg reqNumber "$REQ_NUMBER" \
+    --arg jobName "${REQ_NUMBER}_RECEIVED" \
     --arg nodeID "$NODE_ID" \
-    --arg cmd "echo '{\\\"requestNumber\\\": \\\"$REQ_NUMBER\\\"}' > /tmp/$REQ_NUMBER.json" \
-    '.name = $reqNumber |
+    --argjson cmdArray '[
+      "echo '\''{\\\"requestNumber\\\": \\\"'$REQ_NUMBER'\\\"}'\'' > /tmp/'$REQ_NUMBER'.json",
+      "[ ! -f /home/ubuntu/create_mount_s3.sh ] || sudo rm -f /home/ubuntu/create_mount_s3.sh",
+      "sudo wget -P /home/ubuntu/ https://raw.githubusercontent.com/prohealops/req_mgmt/refs/heads/main/lib/create_mount_s3.sh",
+      "sudo chmod +x /home/ubuntu/create_mount_s3.sh",
+      "sudo /home/ubuntu/create_mount_s3.sh"
+    ]' \
+    '.name = $jobName |
      .target.groups[0].nodeIdentifiers[0] = $nodeID |
-     .actions.steps[0].command.linux[0] = $cmd' \
+     .actions.steps[0].command.linux = $cmdArray' \
     "$SCHEDULER_TEMPLATE")
 
   log "Scheduler payload: $SCHEDULER_PAYLOAD"
@@ -136,6 +154,43 @@ if [[ "$catalogName" == "S3 Bucket Mapping in Windows Machine" ]]; then
   log "Scheduler response: $SCHEDULER_RESPONSE"
 
   echo "Courier job response: $SCHEDULER_RESPONSE"
+  
+  # Sleep for 2 minutes before running the sanity check
+  log "Sleeping for 2 minutes before running sanity check..."
+  sleep 120
+  
+  # Create sanity check job
+  SANITY_JOB_NAME="${REQ_NUMBER}_Sanity"
+  log "Creating sanity check job: $SANITY_JOB_NAME"
+  
+  # Create a password for the sanity script
+  SANITY_PASSWORD="Password123"
+  
+  # Create the sanity check job payload
+  SANITY_PAYLOAD=$(jq \
+    --arg jobName "$SANITY_JOB_NAME" \
+    --arg nodeID "$NODE_ID" \
+    --argjson cmdArray '[
+      "[ ! -f /home/ubuntu/sanity_mount_s3.sh ] || sudo rm -f /home/ubuntu/sanity_mount_s3.sh",
+      "sudo wget -P /home/ubuntu/ https://raw.githubusercontent.com/prohealops/req_mgmt/refs/heads/main/lib/sanity_mount_s3.sh",
+      "sudo chmod +x /home/ubuntu/sanity_mount_s3.sh",
+      "sudo /home/ubuntu/sanity_mount_s3.sh '$REQ_NUMBER' '\''$SANITY_PASSWORD'\''"
+    ]' \
+    '.name = $jobName |
+     .target.groups[0].nodeIdentifiers[0] = $nodeID |
+     .actions.steps[0].command.linux = $cmdArray' \
+    "$SCHEDULER_TEMPLATE")
+  
+  log "Sanity check payload: $SANITY_PAYLOAD"
+  
+  # Execute the sanity check job
+  SANITY_RESPONSE=$(curl -s -X POST "$SCHEDULER_URL" \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "$SANITY_PAYLOAD")
+  log "Sanity check response: $SANITY_RESPONSE"
+  
+  echo "Sanity check job response: $SANITY_RESPONSE"
 else
   echo "catalogName does not match the required value."
 fi
