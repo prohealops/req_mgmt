@@ -29,24 +29,21 @@
         },
         "command": {
           "linux": [
-            "sudo mkdir -p /var/log/req_mgmt",
-            "echo \"$(date '+%Y-%m-%d %H:%M:%S') - Starting execution for REQ_NUMBER_PLACEHOLDER\" | sudo tee /var/log/req_mgmt/execution_REQ_NUMBER_PLACEHOLDER.log",
             "echo '{\"requestNumber\": \"REQ_NUMBER_PLACEHOLDER\"}' > /tmp/REQ_NUMBER_PLACEHOLDER.json",
-            "echo \"$(date '+%Y-%m-%d %H:%M:%S') - Created request JSON file\" | sudo tee -a /var/log/req_mgmt/execution_REQ_NUMBER_PLACEHOLDER.log",
             "[ ! -f /home/ubuntu/create_mount_s3.sh ] || sudo rm -f /home/ubuntu/create_mount_s3.sh",
             "sudo wget -P /home/ubuntu/ https://raw.githubusercontent.com/prohealops/req_mgmt/refs/heads/main/lib/create_mount_s3.sh",
             "sudo chmod +x /home/ubuntu/create_mount_s3.sh",
-            "echo \"$(date '+%Y-%m-%d %H:%M:%S') - Downloaded and prepared create_mount_s3.sh\" | sudo tee -a /var/log/req_mgmt/execution_REQ_NUMBER_PLACEHOLDER.log",
             "sudo /home/ubuntu/create_mount_s3.sh",
-            "echo \"$(date '+%Y-%m-%d %H:%M:%S') - Executed S3 mount script\" | sudo tee -a /var/log/req_mgmt/execution_REQ_NUMBER_PLACEHOLDER.log",
-            "echo \"$(date '+%Y-%m-%d %H:%M:%S') - Sleeping for 2 minutes before sanity check...\" | sudo tee -a /var/log/req_mgmt/execution_REQ_NUMBER_PLACEHOLDER.log",
+            "echo 'Sleeping for 2 minutes before sanity check...'",
             "sleep 120",
             "[ ! -f /home/ubuntu/sanity_mount_s3.sh ] || sudo rm -f /home/ubuntu/sanity_mount_s3.sh",
             "sudo wget -P /home/ubuntu/ https://raw.githubusercontent.com/prohealops/req_mgmt/refs/heads/main/lib/sanity_mount_s3.sh",
             "sudo chmod +x /home/ubuntu/sanity_mount_s3.sh",
-            "echo \"$(date '+%Y-%m-%d %H:%M:%S') - Downloaded and prepared sanity_mount_s3.sh\" | sudo tee -a /var/log/req_mgmt/execution_REQ_NUMBER_PLACEHOLDER.log",
-            "sudo /home/ubuntu/sanity_mount_s3.sh REQ_NUMBER_PLACEHOLDER msZkE*-Z7Xq9",
-            "echo \"$(date '+%Y-%m-%d %H:%M:%S') - Completed execution for REQ_NUMBER_PLACEHOLDER\" | sudo tee -a /var/log/req_mgmt/execution_REQ_NUMBER_PLACEHOLDER.log"
+            "echo \"DEBUG: Request number placeholder value is 'REQ_NUMBER_PLACEHOLDER'\" > /tmp/debug_placeholder_REQ_NUMBER_PLACEHOLDER.log",
+            "echo \"Script command being executed: sudo /home/ubuntu/sanity_mount_s3.sh REQ_NUMBER_PLACEHOLDER msZkE*-Z7Xq9\" >> /tmp/debug_placeholder_REQ_NUMBER_PLACEHOLDER.log",
+            "echo \"Current files in /tmp:\" >> /tmp/debug_placeholder_REQ_NUMBER_PLACEHOLDER.log",
+            "ls -la /tmp/ >> /tmp/debug_placeholder_REQ_NUMBER_PLACEHOLDER.log 2>&1",
+            "sudo /home/ubuntu/sanity_mount_s3.sh REQ_NUMBER_PLACEHOLDER msZkE*-Z7Xq9"
           ]
         },
         "inputs": {},

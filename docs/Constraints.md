@@ -1,0 +1,4 @@
+- Cannot create a subflow, i.e. calling a Courier job from another Job
+- No place to save secrets.
+- Cannot run a specific action on specific server in a job, it will run on all the nodes as same.
+- cannot run multiple Courier jobs on a node as the same time. (specifically for RAS)
