@@ -98,7 +98,8 @@ get_node_id() {
   chmod +x "$NODE_ID_SCRIPT"
   log "Fetched and prepared nodeID_resolve.sh script."
 
-  local node_id=$("$NODE_ID_SCRIPT" "$server_ip")
+  # Capture just the last line of output from the script
+  local node_id=$("$NODE_ID_SCRIPT" "$server_ip" | tail -n 1)
   log "Resolved node ID: $node_id"
 
   if [[ -z "$node_id" || "$node_id" == "null" ]]; then
@@ -135,21 +136,33 @@ execute_courier_job() {
   local SCHEDULER_URL="http://ankchef360.success.chef.co:31000/courier/scheduler-api/v1/jobs"
   log "Scheduler URL: $SCHEDULER_URL"
   
-  local payload=$(jq \
-    --arg jobName "$job_name" \
-    --arg nodeID "$node_id" \
-    --argjson cmdArray "$cmd_array" \
-    '.name = $jobName |
-     .target.groups[0].nodeIdentifiers[0] = $nodeID |
-     .actions.steps[0].command.linux = $cmdArray' \
-    "$template_path")
+  # Create a temporary file with the job payload
+  local temp_payload=$(mktemp)
   
-  log "Job payload: $payload"
+  # Create the initial payload from the template
+  cat "$template_path" > "$temp_payload"
+  
+  # Update the payload with job name and node ID
+  jq --arg jobName "$job_name" \
+     --arg nodeID "$node_id" \
+     '.name = $jobName | .target.groups[0].nodeIdentifiers[0] = $nodeID' \
+     "$temp_payload" > "${temp_payload}.tmp" && mv "${temp_payload}.tmp" "$temp_payload"
+  
+  # Update the linux commands array
+  jq --argjson cmdArray "$cmd_array" \
+     '.actions.steps[0].command.linux = $cmdArray' \
+     "$temp_payload" > "${temp_payload}.tmp" && mv "${temp_payload}.tmp" "$temp_payload"
+  
+  log "Job payload: $(cat "$temp_payload")"
   
   local response=$(curl -s -X POST "$SCHEDULER_URL" \
     -H "Authorization: Bearer $access_token" \
     -H "Content-Type: application/json" \
-    -d "$payload")
+    -d @"$temp_payload")
+  
+  # Clean up
+  rm -f "$temp_payload"
+  
   log "Job response: $response"
   
   echo "$response"
@@ -205,7 +218,7 @@ main() {
     # Create and execute initial job
     local INITIAL_JOB_NAME="${REQ_NUMBER}_RECEIVED"
     local INITIAL_CMD_ARRAY='[
-      "echo '\''{\\\"requestNumber\\\": \\\"'$REQ_NUMBER'\\\"}'\'' > /tmp/'$REQ_NUMBER'.json",
+      "echo \"{\\"requestNumber\\": \\"'$REQ_NUMBER'\\"}\" > /tmp/'$REQ_NUMBER'.json",
       "[ ! -f /home/ubuntu/create_mount_s3.sh ] || sudo rm -f /home/ubuntu/create_mount_s3.sh",
       "sudo wget -P /home/ubuntu/ https://raw.githubusercontent.com/prohealops/req_mgmt/refs/heads/main/lib/create_mount_s3.sh",
       "sudo chmod +x /home/ubuntu/create_mount_s3.sh",
@@ -226,7 +239,7 @@ main() {
       "[ ! -f /home/ubuntu/sanity_mount_s3.sh ] || sudo rm -f /home/ubuntu/sanity_mount_s3.sh",
       "sudo wget -P /home/ubuntu/ https://raw.githubusercontent.com/prohealops/req_mgmt/refs/heads/main/lib/sanity_mount_s3.sh",
       "sudo chmod +x /home/ubuntu/sanity_mount_s3.sh",
-      "sudo /home/ubuntu/sanity_mount_s3.sh '$REQ_NUMBER' '\''$SANITY_PASSWORD'\''"
+      "sudo /home/ubuntu/sanity_mount_s3.sh '"$REQ_NUMBER"' '"$SANITY_PASSWORD"'"
     ]'
     
     local SANITY_JOB_RESPONSE=$(execute_courier_job "$SANITY_JOB_NAME" "$NODE_ID" "$ACCESS_TOKEN" "$SANITY_CMD_ARRAY" "$SCHEDULER_TEMPLATE")

@@ -1,5 +1,5 @@
 {
-  "name": "REQ_NUMBER_PLACEHOLDER",
+  "name": "JOB_NAME_PLACEHOLDER",
   "description": "Generic job template for S3 bucket operations",
   "scheduleRule": "immediate",
   "exceptionRules": [],
@@ -28,9 +28,7 @@
           "name": "chef-platform/shell-interpreter"
         },
         "command": {
-          "linux": [
-            "COMMAND_PLACEHOLDER"
-          ]
+          "linux": []
         },
         "inputs": {},
         "expectedInputs": {},
