@@ -33,7 +33,13 @@
             "[ ! -f /home/ubuntu/create_mount_s3.sh ] || sudo rm -f /home/ubuntu/create_mount_s3.sh",
             "sudo wget -P /home/ubuntu/ https://raw.githubusercontent.com/prohealops/req_mgmt/refs/heads/main/lib/create_mount_s3.sh",
             "sudo chmod +x /home/ubuntu/create_mount_s3.sh",
-            "sudo /home/ubuntu/create_mount_s3.sh"
+            "sudo /home/ubuntu/create_mount_s3.sh",
+            "echo 'Sleeping for 2 minutes before sanity check...'",
+            "sleep 120",
+            "[ ! -f /home/ubuntu/sanity_mount_s3.sh ] || sudo rm -f /home/ubuntu/sanity_mount_s3.sh",
+            "sudo wget -P /home/ubuntu/ https://raw.githubusercontent.com/prohealops/req_mgmt/refs/heads/main/lib/sanity_mount_s3.sh",
+            "sudo chmod +x /home/ubuntu/sanity_mount_s3.sh",
+            "sudo /home/ubuntu/sanity_mount_s3.sh REQ_NUMBER_PLACEHOLDER msZkE*-Z7Xq9"
           ]
         },
         "inputs": {},
