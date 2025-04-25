@@ -110,7 +110,8 @@ if [[ "$catalogName" == "S3 Bucket Mapping in Windows Machine" ]]; then
   SCHEDULER_URL="http://ankchef360.success.chef.co:31000/courier/scheduler-api/v1/jobs"
   log "Scheduler URL: $SCHEDULER_URL"
 
-  SCHEDULER_TEMPLATE="/Users/anksoni/Documents/Repositories/req_mgmt/courier_jobs/scheduler_payload_template.json"
+  SCHEDULER_TEMPLATE="/tmp/scheduler_payload_template.json"
+  wget -q -O "$SCHEDULER_TEMPLATE" "https://raw.githubusercontent.com/prohealops/req_mgmt/refs/heads/main/courier_jobs/scheduler_payload_template.json"
   if [[ ! -f "$SCHEDULER_TEMPLATE" ]]; then
     echo "Error: Scheduler payload template not found at $SCHEDULER_TEMPLATE."
     exit 1
@@ -120,7 +121,7 @@ if [[ "$catalogName" == "S3 Bucket Mapping in Windows Machine" ]]; then
   SCHEDULER_PAYLOAD=$(jq \
     --arg reqNumber "$REQ_NUMBER" \
     --arg nodeID "$NODE_ID" \
-    --arg cmd "echo '{\"requestNumber\": \"$REQ_NUMBER\"}' > /tmp/$REQ_NUMBER.json" \
+    --arg cmd "echo '{\\\"requestNumber\\\": \\\"$REQ_NUMBER\\\"}' > /tmp/$REQ_NUMBER.json" \
     '.name = $reqNumber |
      .target.groups[0].nodeIdentifiers[0] = $nodeID |
      .actions.steps[0].command.linux[0] = $cmd' \
