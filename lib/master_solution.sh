@@ -34,7 +34,7 @@ fi
 catalogName=$(jq -r '.catalogName' "$JSON_FILE" 2>/dev/null)
 log "Extracted catalogName: $catalogName"
 
-if [[ "$catalogName" == "S3 Bucket Mapping in Windows Machine" ]]; then
+if [[ "$catalogName" == "S3 Bucket Mapping in Server" ]]; then
   log "Catalog name matches the required value."
 
   ACCESS_KEY="YTZIPMUCE0HGVLQD1KWS"
