@@ -117,22 +117,28 @@ if [[ "$catalogName" == "S3 Bucket Mapping in Windows Machine" ]]; then
     exit 1
   fi
 
-  # Replace placeholders in the JSON template
-  SCHEDULER_PAYLOAD=$(jq \
-    --arg reqNumber "$REQ_NUMBER" \
-    --arg nodeID "$NODE_ID" \
-    --arg cmd "echo '{\\\"requestNumber\\\": \\\"$REQ_NUMBER\\\"}' > /tmp/$REQ_NUMBER.json" \
-    '.name = $reqNumber |
-     .target.groups[0].nodeIdentifiers[0] = $nodeID |
-     .actions.steps[0].command.linux[0] = $cmd' \
-    "$SCHEDULER_TEMPLATE")
-
-  log "Scheduler payload: $SCHEDULER_PAYLOAD"
+  # First, read the template file into a variable
+  TEMPLATE_CONTENT=$(cat "$SCHEDULER_TEMPLATE")
+  
+  # Replace all placeholder occurrences with the actual values
+  MODIFIED_CONTENT="${TEMPLATE_CONTENT//REQ_NUMBER_PLACEHOLDER/$REQ_NUMBER}"
+  MODIFIED_CONTENT="${MODIFIED_CONTENT//NODE_ID_PLACEHOLDER/$NODE_ID}"
+  
+  # Write the modified content to a temporary file
+  TEMP_PAYLOAD=$(mktemp)
+  echo "$MODIFIED_CONTENT" > "$TEMP_PAYLOAD"
+  
+  log "Prepared scheduler payload with all placeholders replaced"
+  log "Scheduler payload: $(cat "$TEMP_PAYLOAD")"
 
   SCHEDULER_RESPONSE=$(curl -s -X POST "$SCHEDULER_URL" \
     -H "Authorization: Bearer $ACCESS_TOKEN" \
     -H "Content-Type: application/json" \
-    -d "$SCHEDULER_PAYLOAD")
+    -d @"$TEMP_PAYLOAD")
+  
+  # Clean up the temporary file
+  rm -f "$TEMP_PAYLOAD"
+  
   log "Scheduler response: $SCHEDULER_RESPONSE"
 
   echo "Courier job response: $SCHEDULER_RESPONSE"
