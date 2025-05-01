@@ -24,7 +24,10 @@
       {
         "name": "Execute Compliance Run",
         "interpreter": {
-          "skill": { "minVersion": "1.0.0" },
+          "skill": { 
+            "minVersion": "1.0.0", 
+            "maxVersion": "2.9.9" 
+          },
           "name": "chef-platform/shell-interpreter"
         },
         "command": {
